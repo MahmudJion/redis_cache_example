@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 const redis = require('redis');
 
 const PORT = process.env.PORT || 3000;
-const REDIS_PORT = process.env.PORT || 6379;
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
 
 const client = redis.createClient(REDIS_PORT);
 
@@ -11,10 +11,10 @@ const app = express();
 
 // Set response
 function setResponse(username, repos) {
-  return `<h2>${username} has ${repos} Github public repositories</h2>`;
+  return `<h2>${username} has ${repos} GitHub public repositories</h2>`;
 }
 
-// Make request to Github for data
+// Make request to GitHub for data
 async function getRepos(req, res, next) {
   try {
     console.log('Fetching Data...');
@@ -33,7 +33,7 @@ async function getRepos(req, res, next) {
     res.send(setResponse(username, repos));
   } catch (err) {
     console.error(err);
-    res.status(500);
+    res.status(500).send('Internal Server Error');
   }
 }
 
@@ -54,6 +54,6 @@ function cache(req, res, next) {
 
 app.get('/:username', cache, getRepos);
 
-app.listen(3000, () => {
+app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
 });
