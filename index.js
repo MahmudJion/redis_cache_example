@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 3000;
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 
 const client = redis.createClient(REDIS_PORT);
+client.on("error", (err) => console.error("Redis Client Error:", err));
 
 const app = express();
 
@@ -17,11 +18,13 @@ function setResponse(username, repos) {
 // Make request to GitHub for data
 async function getRepos(req, res, next) {
   try {
-    console.log("Fetching Data...");
-
     const { username } = req.params;
 
     const response = await fetch(`https://api.github.com/users/${username}`);
+
+    if (!response.ok) {
+      throw new Error(`GitHub API returned status ${response.status}`);
+    }
 
     const data = await response.json();
 
@@ -32,7 +35,7 @@ async function getRepos(req, res, next) {
 
     res.send(setResponse(username, repos));
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching data from GitHub:", err);
     res.status(500).send("Internal Server Error");
   }
 }
@@ -42,7 +45,10 @@ function cache(req, res, next) {
   const { username } = req.params;
 
   client.get(username, (err, data) => {
-    if (err) throw err;
+    if (err) {
+      console.error("Redis Error:", err);
+      return res.status(500).send("Internal Server Error");
+    }
 
     if (data !== null) {
       res.send(setResponse(username, data));
